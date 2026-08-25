@@ -12,19 +12,19 @@
 - Spring Boot 3.3.13
 - Gradle 8.10.2
 
-별도로 설치해야 하는 데이터베이스는 없습니다. 애플리케이션 실행 시 H2 인메모리 DB와 예시 데이터가 자동으로 생성됩니다.
+별도의 데이터베이스 설치 없이 H2 인메모리 DB를 사용합니다. 실행하면 테이블과 기능 확인용 초기 데이터가 생성됩니다.
+
+빌드:
+
+```bash
+./gradlew clean build
+```
+
+실행:
 
 ```bash
 ./gradlew bootRun
 ```
-
-Windows PowerShell에서는 다음 명령어를 사용합니다.
-
-```powershell
-./gradlew.bat bootRun
-```
-
-실행 후 확인할 수 있는 주소입니다.
 
 - Swagger UI: http://localhost:8080/swagger-ui/index.html
 - H2 Console: http://localhost:8080/h2-console
@@ -37,29 +37,26 @@ User Name: sa
 Password: 입력하지 않음
 ```
 
-## 초기 데이터
-
-실행 직후 Swagger에서 기능을 확인할 수 있도록 아래 데이터를 추가했습니다.
+## 초기 데이터와 확인 순서
 
 | 사용자 ID | 이름 | 이메일 | 프로젝트 역할 |
 |---:|---|---|---|
-| 1 | 홍길동 | owner@example.com | OWNER |
-| 2 | 김관리 | admin@example.com | ADMIN |
-| 3 | 이멤버 | member@example.com | MEMBER |
+| 1 | 신재형1 | shin1@example.com | OWNER |
+| 2 | 신재형2 | shin2@example.com | ADMIN |
+| 3 | 신재형3 | shin3@example.com | MEMBER |
 
 - 프로젝트 ID `1`: Project Collab 개발
-- 작업 2개
-  - 사용자 API 구현
-  - 프로젝트 권한 테스트
+- 작업 2개: 사용자 API 구현, 프로젝트 권한 테스트
 
-간단한 확인 순서:
+실행 직후 Swagger UI에서 다음 순서로 기능을 확인할 수 있습니다.
 
-1. `GET /api/users`로 초기 사용자 조회
+1. `GET /api/users`로 사용자 3명 조회
 2. `GET /api/projects?requesterId=1`로 OWNER가 참여한 프로젝트 조회
-3. `GET /api/projects/1/members?requesterId=1`로 멤버 목록 조회
-4. `GET /api/projects/1/tasks?requesterId=1`로 작업 목록 조회
+3. `GET /api/projects/1/members?requesterId=1`로 역할별 멤버 조회
+4. `GET /api/projects/1/tasks?requesterId=1`로 작업 2개 조회
+5. `GET /api/projects/1/tasks?requesterId=1&keyword=사용자&status=TODO&page=0&size=10`으로 검색, 상태 필터, 페이징 확인
 
-H2 인메모리 DB를 사용하므로 애플리케이션을 종료하면 데이터는 사라지고, 다시 실행하면 초기 데이터가 새로 생성됩니다.
+H2 인메모리 DB를 사용하므로 애플리케이션을 종료하면 데이터는 사라지고, 다시 실행하면 위 데이터가 새로 생성됩니다.
 
 ## API
 
@@ -77,7 +74,7 @@ H2 인메모리 DB를 사용하므로 애플리케이션을 종료하면 데이�
 
 ```json
 {
-  "name": "박사용자",
+  "name": "신재형",
   "email": "user@example.com"
 }
 ```
@@ -196,7 +193,7 @@ GET /api/projects/1/tasks?requesterId=1&keyword=사용자&status=TODO&page=0&siz
   "description": "사용자 등록 및 조회 API 구현",
   "status": "TODO",
   "assigneeId": 3,
-  "assigneeName": "이멤버",
+  "assigneeName": "신재형3",
   "version": 0,
   "createdAt": "2026-08-25T19:00:00",
   "updatedAt": "2026-08-25T19:00:00"
@@ -223,7 +220,9 @@ GET /api/projects/1/tasks?requesterId=1&keyword=사용자&status=TODO&page=0&siz
 
 작업 엔티티에 JPA의 `@Version`을 적용했습니다. 클라이언트는 작업을 조회했을 때 받은 `version`을 수정 요청에 포함해야 합니다.
 
-먼저 처리된 요청으로 버전이 변경된 뒤 이전 버전으로 다시 수정하면 `409 Conflict`를 반환합니다. 마지막 요청이 앞선 변경을 조용히 덮어쓰게 두는 대신, 사용자에게 충돌을 알리고 최신 데이터를 다시 조회하도록 하는 방식을 선택했습니다. 작업 내용이 사라지는 상황을 막는 것이 더 중요하다고 판단했습니다.
+먼저 처리된 요청으로 버전이 변경된 뒤 이전 버전으로 다시 수정하면 `409 Conflict`를 반환합니다.
+마지막 요청이 앞선 변경을 조용히 덮어쓰게 두는 대신, 사용자에게 충돌을 알리고 최신 데이터를 다시 조회하도록 하는 방식을 선택했습니다.
+작업 내용이 사라지는 상황을 막는 것이 더 중요하다고 판단했습니다.
 
 ## 오류 응답
 
@@ -258,19 +257,23 @@ GET /api/projects/1/tasks?requesterId=1&keyword=사용자&status=TODO&page=0&siz
 
 ### 도메인별 패키지 구성
 
-사용자, 프로젝트, 작업을 기준으로 패키지를 나누고 각 도메인 안에서 API, 애플리케이션, 도메인, 인프라 계층을 구분했습니다. 기능을 찾기 쉽고 한 도메인의 변경 범위를 좁히기 위한 구성입니다.
+사용자, 프로젝트, 작업을 기준으로 패키지를 나누고 각 도메인 안에서 API, 애플리케이션, 도메인, 인프라 계층을 구분했습니다.
+기능을 찾기 쉽고 한 도메인의 변경 범위를 좁히기 위한 구성입니다.
 
 ### 단방향 연관관계
 
-`ProjectMember`와 `Task`에서 필요한 방향으로만 `ManyToOne` 관계를 두었습니다. 양방향 관계를 많이 만들면 JSON 직렬화와 연관관계 관리가 복잡해질 수 있어 현재 범위에서는 사용하지 않았습니다.
+`ProjectMember`와 `Task`에서 필요한 방향으로만 `ManyToOne` 관계를 두었습니다.
+양방향 관계를 많이 만들면 JSON 직렬화와 연관관계 관리가 복잡해질 수 있어 현재 범위에서는 사용하지 않았습니다.
 
 ### DTO 사용
 
-엔티티를 API 응답으로 직접 반환하지 않고 요청·응답 DTO를 따로 두었습니다. 지연 로딩 객체가 그대로 노출되는 문제를 막고 API 형식이 엔티티 구조에 직접 의존하지 않도록 했습니다.
+엔티티를 API 응답으로 직접 반환하지 않고 요청·응답 DTO를 따로 두었습니다.
+지연 로딩 객체가 그대로 노출되는 문제를 막고 API 형식이 엔티티 구조에 직접 의존하지 않도록 했습니다.
 
 ### 권한 확인 위치
 
-별도 인증 시스템이 없기 때문에 컨트롤러에서 `requesterId`를 받고, 서비스 계층에서 프로젝트 멤버 여부와 역할을 확인합니다. 컨트롤러마다 권한 코드를 반복하지 않고 트랜잭션 안에서 대상 데이터와 함께 검사할 수 있도록 했습니다.
+별도 인증 시스템이 없기 때문에 컨트롤러에서 `requesterId`를 받고, 서비스 계층에서 프로젝트 멤버 여부와 역할을 확인합니다.
+컨트롤러마다 권한 코드를 반복하지 않고 트랜잭션 안에서 대상 데이터와 함께 검사할 수 있도록 했습니다.
 
 ## 사용 기술과 선택 이유
 
@@ -283,7 +286,8 @@ GET /api/projects/1/tasks?requesterId=1&keyword=사용자&status=TODO&page=0&siz
 | Springdoc OpenAPI | 구현된 API를 Swagger UI에서 바로 확인하고 호출하기 위해 사용 |
 | JUnit 5, MockMvc | 서버를 별도로 띄우지 않고 API와 권한 규칙을 함께 검증하기 위해 사용 |
 
-현재 규모에서는 QueryDSL, Redis, 메시지 큐, Docker 등을 추가하지 않았습니다. 검색 조건이 단순하고 데이터가 인메모리에 있으므로 기술을 더 추가하는 것보다 기본 JPA 쿼리와 트랜잭션을 명확하게 유지하는 편이 낫다고 판단했습니다.
+현재 규모에서는 QueryDSL, Redis, 메시지 큐, Docker 등을 추가하지 않았습니다.
+검색 조건이 단순하고 데이터가 인메모리에 있으므로 기술을 더 추가하는 것보다 기본 JPA 쿼리와 트랜잭션을 명확하게 유지하는 편이 낫다고 판단했습니다.
 
 ## 테스트
 
@@ -291,7 +295,7 @@ GET /api/projects/1/tasks?requesterId=1&keyword=사용자&status=TODO&page=0&siz
 ./gradlew test
 ```
 
-현재 다음 내용을 포함한 통합 테스트 9개가 통과합니다.
+다음 내용을 포함한 통합 테스트 9개가 통과합니다.
 
 - 프로젝트 생성자의 OWNER 등록
 - 비멤버 프로젝트 접근 차단
@@ -305,15 +309,17 @@ GET /api/projects/1/tasks?requesterId=1&keyword=사용자&status=TODO&page=0&siz
 
 ## 여러 회사의 데이터 분리
 
-여러 회사가 함께 사용하는 서비스로 확장한다면 `Company` 또는 `Tenant` 엔티티를 추가하고 사용자, 프로젝트 등 분리 대상 테이블에 `tenant_id`를 저장하겠습니다.
+여러 회사가 함께 사용하는 서비스로 확장한다면 `Company` 또는 `Tenant` 엔티티를 추가하고, 사용자와 프로젝트를 포함한 분리 대상 테이블에 `tenant_id`를 저장하겠습니다.
 
-API 요청에서 인증된 사용자의 tenant 정보를 가져오고, 모든 목록과 단건 조회 조건에 `tenant_id`를 포함해야 합니다. 이메일이나 프로젝트 이름 같은 유일성 제약도 전체 서비스 기준이 아니라 `(tenant_id, email)`처럼 회사 범위의 복합 유일성 제약으로 변경합니다.
+요청을 처리할 때 인증된 사용자의 tenant 정보를 확인하고 모든 목록 및 단건 조회 조건에 `tenant_id`를 포함해야 합니다.
+이메일 같은 유일성 제약도 전체 서비스 기준이 아니라 `(tenant_id, email)` 형태의 복합 유일성 제약으로 변경합니다.
 
-서비스 코드에서 조건을 빠뜨리는 실수를 줄이기 위해 tenant 컨텍스트와 공통 조회 조건을 두고, 다른 회사 데이터 접근을 검증하는 통합 테스트를 추가하겠습니다. 회사별 백업이나 규정상 물리적 분리가 필요하다면 같은 구조에서 회사별 스키마 또는 데이터베이스 분리 방식으로 변경할 수 있습니다.
+조회 조건 누락으로 다른 회사 데이터가 노출되지 않도록 tenant 컨텍스트와 공통 조회 조건을 적용하고, 회사 간 접근 차단 통합 테스트를 추가하겠습니다.
+회사별 백업이나 물리적 분리가 필요한 경우에는 회사별 스키마 또는 데이터베이스를 사용하는 방식으로 확장할 수 있습니다.
 
 ## 미구현 및 개선 사항
 
 - 인증은 과제 범위에 따라 구현하지 않았습니다. 실제 서비스에서는 로그인 사용자 정보에서 요청자를 식별해야 합니다.
-- 프론트엔드는 선택 항목이므로 현재 구현하지 않았습니다.
+- 프론트엔드는 선택 항목이므로 구현하지 않았습니다.
 - 현재 H2 인메모리 DB와 `create-drop` 설정을 사용합니다. 운영 환경에서는 PostgreSQL 등의 DB와 Flyway 마이그레이션을 사용하겠습니다.
 - 시간이 더 있다면 권한 조합별 테스트, API 문서 설명, 감사 로그를 추가하겠습니다.
