@@ -63,6 +63,7 @@ public class ProjectMemberService {
         ProjectMember targetMember = findProjectMember(projectId,memberId);
 
         protectLastOwner(projectId,targetMember,request.role());
+        targetMember.changeRole(request.role());
 
         return ProjectMemberResponse.from(targetMember);
 
@@ -99,8 +100,8 @@ public class ProjectMemberService {
                 ));
     }
 
-    private ProjectMember findProjectMember(Long projectId,Long userId){
-        return projectMemberRepository.findByProjectIdAndUserId(projectId,userId).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"프로젝트 멤버를 찾을 수 없습니다."));
+    private ProjectMember findProjectMember(Long projectId,Long memberId){
+        return projectMemberRepository.findByIdAndProjectId(memberId,projectId).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"프로젝트 멤버를 찾을 수 없습니다."));
     }
 
     private void requireOwnerOrAdmin(ProjectMember membership){
