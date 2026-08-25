@@ -17,3 +17,7 @@ spring:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+app:
+  seed-data:
+    enabled: true
