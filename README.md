@@ -285,6 +285,8 @@ GET /api/projects/1/tasks?requesterId=1&keyword=사용자&status=TODO&page=0&siz
 | H2 | 별도 DB 설치 없이 실행 직후 기능을 확인하기 위해 사용 |
 | Springdoc OpenAPI | 구현된 API를 Swagger UI에서 바로 확인하고 호출하기 위해 사용 |
 | JUnit 5, MockMvc | 서버를 별도로 띄우지 않고 API와 권한 규칙을 함께 검증하기 위해 사용 |
+| React | 과제의 선택 프론트엔드 요구사항에 맞춰 최소한의 작업 관리 화면을 구현하기 위해 사용 |
+| Vite | 복잡한 설정 없이 React 소스를 빌드하고 결과물을 Spring 정적 리소스에 포함하기 위해 사용 |
 
 현재 규모에서는 QueryDSL, Redis, 메시지 큐, Docker 등을 추가하지 않았습니다.
 검색 조건이 단순하고 데이터가 인메모리에 있으므로 기술을 더 추가하는 것보다 기본 JPA 쿼리와 트랜잭션을 명확하게 유지하는 편이 낫다고 판단했습니다.
@@ -307,6 +309,24 @@ GET /api/projects/1/tasks?requesterId=1&keyword=사용자&status=TODO&page=0&siz
 - 오래된 작업 버전 수정 충돌
 - Spring 애플리케이션 컨텍스트 실행
 
+## 프론트엔드
+
+선택 항목으로 작업 목록을 확인하는 간단한 React 화면을 추가했습니다. React 빌드 결과를 Spring Boot 정적 리소스에 포함했기 때문에 프론트엔드를 따로 실행할 필요가 없습니다.
+
+`./gradlew bootRun`으로 백엔드를 실행한 뒤 아래 주소로 접속합니다.
+
+접속 주소: http://localhost:8080
+
+이름과 이메일로 사용자를 등록할 수 있으며, 프로젝트 ID와 요청자 ID를 입력해 작업 목록 조회, 검색, 상태 필터, 생성, 상태 변경, 삭제를 확인할 수 있습니다. 프로젝트 멤버 관리는 Swagger UI에서 확인합니다.
+
+프론트엔드 소스를 수정한 경우에만 아래 명령으로 Spring 정적 리소스를 다시 생성합니다.
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
 ## 여러 회사의 데이터 분리
 
 여러 회사가 함께 사용하는 서비스로 확장한다면 `Company` 또는 `Tenant` 엔티티를 추가하고, 사용자와 프로젝트를 포함한 분리 대상 테이블에 `tenant_id`를 저장하겠습니다.
@@ -320,6 +340,5 @@ GET /api/projects/1/tasks?requesterId=1&keyword=사용자&status=TODO&page=0&siz
 ## 미구현 및 개선 사항
 
 - 인증은 과제 범위에 따라 구현하지 않았습니다. 실제 서비스에서는 로그인 사용자 정보에서 요청자를 식별해야 합니다.
-- 프론트엔드는 선택 항목이므로 구현하지 않았습니다.
 - 현재 H2 인메모리 DB와 `create-drop` 설정을 사용합니다. 운영 환경에서는 PostgreSQL 등의 DB와 Flyway 마이그레이션을 사용하겠습니다.
 - 시간이 더 있다면 권한 조합별 테스트, API 문서 설명, 감사 로그를 추가하겠습니다.
