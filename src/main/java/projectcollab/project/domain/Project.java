@@ -21,7 +21,7 @@ public class Project {
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
-    private LocalDateTime updateAt;
+    private LocalDateTime updatedAt;
 
     protected Project(){}
 
@@ -31,8 +31,15 @@ public class Project {
     }
 
     @PrePersist
-    void preUpdate(){
-        updateAt=LocalDateTime.now();
+    void prePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     public Long getId() {
@@ -51,7 +58,12 @@ public class Project {
         return createdAt;
     }
 
-    public LocalDateTime getUpdateAt(){
-        return updateAt;
+    public LocalDateTime getUpdatedAt(){
+        return updatedAt;
+    }
+
+    public void update(String name, String description) {
+        this.name = name;
+        this.description = description;
     }
 }

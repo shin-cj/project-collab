@@ -18,4 +18,8 @@ public interface TaskRepository extends JpaRepository<Task,Long> {
 
     Page<Task> findAllByProjectIdAndStatusAndTitleContainingIgnoreCase(Long projectId, TaskStatus status, String keyword, Pageable pageable
     );
+
+    void deleteAllByProjectId(Long projectId);
+
+
 }

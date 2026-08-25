@@ -10,5 +10,5 @@ public record ProjectCreateRequest
     String name,
 
     @Size(max=1000,message = "설명은 1000자 이하여야합니다.")
-    String desciption
+    String description
 ){}

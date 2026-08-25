@@ -11,7 +11,7 @@ public record ProjectResponse(
         String description,
         Role myRole,
         LocalDateTime createdAt,
-        LocalDateTime updateAt
+        LocalDateTime updatedAt
 ) {
     public static ProjectResponse from(Project project,Role myRole){
         return new ProjectResponse(
@@ -20,7 +20,7 @@ public record ProjectResponse(
                 project.getDescription(),
                 myRole,
                 project.getCreatedAt(),
-                project.getUpdateAt()
+                project.getUpdatedAt()
         );
     }
 }

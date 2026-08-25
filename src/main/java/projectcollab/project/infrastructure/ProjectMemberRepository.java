@@ -19,4 +19,11 @@ public interface ProjectMemberRepository
     boolean existsByProjectIdAndUserId(Long projectId, Long userId);
 
     long countByProjectIdAndRole(Long projectId, Role role);
+
+    void deleteAllByProjectId(Long projectId);
+
+    Optional<ProjectMember> findByIdAndProjectId(
+            Long memberId,
+            Long projectId
+    );
 }
